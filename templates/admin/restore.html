@@ -1,0 +1,2 @@
+{% extends "admin/base_site.html" %}
+{% block content %}<h1>Restore {{ revision.entry.title }}</h1><p>This restores the saved version from {{ revision.saved_at }} and its citations as a draft. The current page will be removed from public view until you publish it again. A snapshot of the current version is saved first.</p><form method="post">{% csrf_token %}<button type="submit">Restore as draft</button> <a href="{% url 'admin:hub_revision_changelist' %}">Cancel</a></form>{% endblock %}
