@@ -1,0 +1,39 @@
+name: Test and build
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-only-not-a-production-secret-000000000000000000000000000000000000
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py collectstatic --noinput
+      - run: python manage.py test
+      - run: python scripts/configure.py
+      - run: docker compose build
+      - name: Container startup and persistent-volume smoke test
+        run: |
+          docker compose up -d
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/healthz/; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/healthz/
+          curl -fsS http://127.0.0.1:8080/incidents/ > /dev/null
+          docker compose restart web
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/healthz/; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/healthz/
+      - name: Container logs
+        if: always()
+        run: docker compose logs || true
