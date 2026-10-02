@@ -1,0 +1,24 @@
+services:
+  web:
+    build: .
+    image: woodlawn-bess:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-8080}:8000"
+    volumes:
+      - bess-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/staticfiles:uid=10001,gid=10001,mode=0755
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s
+
+volumes:
+  bess-data:
